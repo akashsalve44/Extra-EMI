@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EMI Calculator — Tenure vs EMI Impact</title>
+<style>
+  :root {
+    --primary: #1976d2;
+    --bg: #f5f7fa;
+    --card-bg: #fff;
+    --border: #e0e0e0;
+    --text: #333;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    margin: 0;
+    padding: 20px;
+    color: var(--text);
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  h2 {
+    text-align: center;
+    margin: 10px 0 25px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--primary);
+  }
+
+  select[multiple] {
+    height: 120px;
+  }
+
+  .actions {
+    margin-top: 18px;
+    text-align: center;
+  }
+
+  .btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn:hover {
+    background: #0d5ca6;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 22px;
+    justify-content: center;
+  }
+
+  .card {
+    flex: 1 1 220px;
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .card h3 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--primary);
+  }
+
+  .card b {
+    display: block;
+    margin-top: 6px;
+    font-size: 18px;
+  }
+
+  .tables-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  .table-wrap {
+    flex: 1 1 500px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: auto;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .table-wrap h3 {
+    text-align: center;
+    background: var(--primary);
+    color: #fff;
+    padding: 10px;
+    margin: 0;
+    border-radius: 10px 10px 0 0;
+    font-size: 15px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th, td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    text-align: right;
+  }
+
+  th {
+    background: #e3f2fd;
+    color: #111;
+    font-weight: 600;
+  }
+
+  td:first-child, th:first-child {
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      padding: 10px;
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    .tables-row {
+      flex-direction: column;
+    }
+
+    .table-wrap {
+      min-width: 100%;
+    }
+
+    table {
+      font-size: 13px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h2>EMI Calculator — Tenure Reduction vs EMI Reduction</h2>
+
+    <div class="controls">
+      <div>
+        <label>Loan Amount (₹)</label>
+        <input id="loanAmount" type="number" placeholder="e.g. 7000000" />
+      </div>
+      <div>
+        <label>Interest Rate (p.a %)</label>
+        <input id="roi" type="number" step="0.01" placeholder="e.g. 7.8" />
+      </div>
+      <div>
+        <label>Tenure (years)</label>
+        <input id="tenure" type="number" placeholder="e.g. 25" />
+      </div>
+      <div>
+        <label>Extra EMIs per Quarter</label>
+        <input id="extraPerQuarter" type="number" min="0" value="1" />
+      </div>
+    </div>
+
+    <label style="margin-top: 16px; display:block;">Select months for extra EMI</label>
+    <select id="extraMonths" multiple>
+      <option value="0">January</option>
+      <option value="3">April</option>
+      <option value="6">July</option>
+      <option value="9">October</option>
+    </select>
+
+    <div class="actions">
+      <button class="btn" onclick="runAll()">Calculate</button>
+    </div>
+
+    <div id="summaryResults" class="summary"></div>
+
+    <div class="tables-row">
+      <div class="table-wrap">
+        <h3>Impact on Tenure (Same EMI)</h3>
+        <table id="tableTenure">
+          <thead>
+            <tr>
+              <th>Month & Year</th>
+              <th>EMI (₹)</th>
+              <th>Extra EMI (₹)</th>
+              <th>Principal (₹)</th>
+              <th>Interest (₹)</th>
+              <th>Closing (₹)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <h3>Impact on EMI (Same Tenure)</h3>
+        <table id="tableEMI">
+          <thead>
+            <tr>
+              <th>Month & Year</th>
+              <th>EMI (₹)</th>
+              <th>Extra EMI (₹)</th>
+              <th>Principal (₹)</th>
+              <th>Interest (₹)</th>
+              <th>Closing (₹)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toINR(x){return Number(x).toLocaleString('en-IN',{maximumFractionDigits:2,minimumFractionDigits:2});}
+    function getSelectedMonths(){return Array.from(document.getElementById('extraMonths').selectedOptions).map(o=>parseInt(o.value));}
+    function calcEMI(P,r,n){return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);}
+
+    function runAll(){
+      const P=parseFloat(document.getElementById('loanAmount').value);
+      const roi=parseFloat(document.getElementById('roi').value);
+      const years=parseFloat(document.getElementById('tenure').value);
+      const extraPerQuarter=parseInt(document.getElementById('extraPerQuarter').value)||0;
+      const extraMonths=getSelectedMonths();
+      if(!P||!roi||!years){alert('Please fill all fields');return;}
+
+      const r=roi/12/100;
+      const n=Math.round(years*12);
+      const emi=calcEMI(P,r,n);
+
+      // Tenure Reduction
+      let bal1=P; let month=0; const schedule1=[]; const start=new Date();
+      while(bal1>0.1 && month<600){
+        month++;
+        const cur=new Date(start.getFullYear(),start.getMonth()+month-1,1);
+        const intAmt=bal1*r;
+        let prinAmt=emi-intAmt;
+        bal1-=prinAmt;
+        let extra=0;
+        if(extraMonths.includes(cur.getMonth())&&extraPerQuarter>0){
+          for(let i=0;i<extraPerQuarter&&bal1>0;i++){
+            const ei=bal1*r;
+            const ep=emi-ei;
+            bal1-=ep;
+            extra+=emi;
+            prinAmt+=ep;
+          }
+        }
+        schedule1.push({date:cur.toLocaleString('default',{month:'short'})+'-'+cur.getFullYear(),emi,extra,prin:prinAmt,int:intAmt,balance:bal1});
+      }
+
+      // EMI Reduction
+      let bal2=P; const schedule2=[];
+      for(let m=1;m<=n&&bal2>0.1;m++){
+        const cur=new Date(start.getFullYear(),start.getMonth()+m-1,1);
+        const remain=n-(m-1);
+        const emiNow=calcEMI(bal2,r,remain);
+        const intAmt=bal2*r;
+        let prinAmt=emiNow-intAmt;
+        bal2-=prinAmt;
+        let extra=0;
+        if(extraMonths.includes(cur.getMonth())&&extraPerQuarter>0){
+          for(let i=0;i<extraPerQuarter&&bal2>0;i++){
+            const ei=bal2*r;
+            const ep=emi-ei;
+            bal2-=ep;
+            extra+=emi;
+            prinAmt+=ep;
+          }
+        }
+        schedule2.push({date:cur.toLocaleString('default',{month:'short'})+'-'+cur.getFullYear(),emi:emiNow,extra,prin:prinAmt,int:intAmt,balance:bal2});
+      }
+
+      document.getElementById('summaryResults').innerHTML=`
+        <div class='card'><h3>Base EMI</h3><b>₹ ${toINR(emi)}</b><span>${years} yrs (${n} months)</span></div>
+        <div class='card'><h3>Tenure Impact</h3><b>${(schedule1.length/12).toFixed(2)} yrs</b><span>Saved ${(years-(schedule1.length/12)).toFixed(2)} yrs</span></div>
+        <div class='card'><h3>EMI Impact</h3><b>₹ ${toINR(schedule2[0].emi)}</b><span>Reduced EMI</span></div>`;
+
+      const t1=document.querySelector('#tableTenure tbody');
+      t1.innerHTML=schedule1.map(r=>`<tr><td>${r.date}</td><td>${toINR(r.emi)}</td><td>${toINR(r.extra)}</td><td>${toINR(r.prin)}</td><td>${toINR(r.int)}</td><td>${toINR(r.balance)}</td></tr>`).join('');
+      const t2=document.querySelector('#tableEMI tbody');
+      t2.innerHTML=schedule2.map(r=>`<tr><td>${r.date}</td><td>${toINR(r.emi)}</td><td>${toINR(r.extra)}</td><td>${toINR(r.prin)}</td><td>${toINR(r.int)}</td><td>${toINR(r.balance)}</td></tr>`).join('');
+    }
+  </script>
+</body>
+</html>
